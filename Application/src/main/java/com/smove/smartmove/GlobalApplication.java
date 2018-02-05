@@ -1,6 +1,9 @@
 package com.smove.smartmove;
 
 import android.app.Application;
+import android.bluetooth.BluetoothDevice;
+
+import java.util.ArrayList;
 
 /**
  * Created by clem on 02/02/18.
@@ -9,4 +12,13 @@ import android.app.Application;
 
 public class GlobalApplication extends Application {
 
+    private ArrayList<BluetoothDevice> bluetoothDevices;
+
+    public void setBluetoothDevices(ArrayList<BluetoothDevice> bluetoothDevices){
+        this.bluetoothDevices = bluetoothDevices;
+    }
+
+    public ArrayList<BluetoothDevice> getBluetoothDevices() {
+        return this.bluetoothDevices;
+    }
 }

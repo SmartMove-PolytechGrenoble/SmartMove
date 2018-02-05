@@ -25,6 +25,7 @@ import android.bluetooth.BluetoothManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -36,14 +37,21 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
+import android.widget.AdapterView;
 import android.widget.BaseAdapter;
+import android.widget.Button;
+import android.widget.CheckedTextView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.android.bluetoothlegatt.R;
+import com.smove.smartmove.GlobalApplication;
+import com.smove.smartmove.MainActivity;
 
+import java.io.Console;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Activity for scanning and displaying available Bluetooth LE devices.
@@ -52,8 +60,9 @@ public class DeviceScanActivity extends ListActivity {
     private LeDeviceListAdapter mLeDeviceListAdapter;
     private BluetoothAdapter mBluetoothAdapter;
     private boolean mScanning;
+    private GlobalApplication mApp;
     private Handler mHandler;
-
+    private static ListView listview;
     private static final int REQUEST_ENABLE_BT = 1;
     // Stops scanning after 10 seconds.
     private static final long SCAN_PERIOD = 10000;
@@ -61,10 +70,12 @@ public class DeviceScanActivity extends ListActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        requestWindowFeature(Window.FEATURE_NO_TITLE);
+        this.setTitle(R.string.title_devices);
+        setContentView(R.layout.device_scan_activity);
+        //requestWindowFeature(Window.FEATURE_NO_TITLE);
         mHandler = new Handler();
-
+        listview = this.getListView();
+        mApp = ((GlobalApplication) getApplicationContext());
         // Use this check to determine whether BLE is supported on the device.  Then you can
         // selectively disable BLE-related features.
         if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
@@ -78,12 +89,41 @@ public class DeviceScanActivity extends ListActivity {
                 (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
         mBluetoothAdapter = bluetoothManager.getAdapter();
 
+
         // Checks if Bluetooth is supported on the device.
         if (mBluetoothAdapter == null) {
             Toast.makeText(this, R.string.error_bluetooth_not_supported, Toast.LENGTH_SHORT).show();
             finish();
             return;
         }
+
+        listview.setItemsCanFocus(false);
+        listview.setChoiceMode(ListView.CHOICE_MODE_MULTIPLE);
+        Button validate = new Button(this);
+        validate.setText("validate");
+        getListView().addFooterView(validate);
+
+        validate.setOnClickListener(new Button.OnClickListener() { //Detect touch on button
+            @Override
+            public void onClick(View v) {
+                ArrayList<BluetoothDevice> bDevices = new ArrayList<BluetoothDevice>();
+                for(int i = 0;i<listview.getAdapter().getCount();i++){
+                    if(listview.isItemChecked(i))
+                        bDevices.add((BluetoothDevice) listview.getAdapter().getItem(i));
+                }
+                mApp.setBluetoothDevices(bDevices);
+                finish();
+            }
+        });
+     /*   listview.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view,
+                                    int position, long id) {
+                // Manage selected items here
+                System.out.println("clicked" + position);
+            }
+        });
+*/
     }
 
     @Override
@@ -154,16 +194,25 @@ public class DeviceScanActivity extends ListActivity {
 
     @Override
     protected void onListItemClick(ListView l, View v, int position, long id) {
+        if(!listview.isItemChecked(position)) {
+            listview.setItemChecked(position, false);
+            v.setBackgroundColor(Color.BLACK);
+        }
+        else{
+            listview.setItemChecked(position, true);
+            v.setBackgroundColor(Color.LTGRAY);
+        }
+
         final BluetoothDevice device = mLeDeviceListAdapter.getDevice(position);
         if (device == null) return;
-        final Intent intent = new Intent(this, DeviceControlActivity.class);
+       /* final Intent intent = new Intent(this, DeviceControlActivity.class);
         intent.putExtra(DeviceControlActivity.EXTRAS_DEVICE_NAME, device.getName());
         intent.putExtra(DeviceControlActivity.EXTRAS_DEVICE_ADDRESS, device.getAddress());
         if (mScanning) {
             mBluetoothAdapter.stopLeScan(mLeScanCallback);
             mScanning = false;
         }
-        startActivity(intent);
+        startActivity(intent); */
     }
 
     private void scanLeDevice(final boolean enable) {
