@@ -16,6 +16,5 @@
 -->
 
 <resources>
-
-
+    <color name="myColor">#6f6f6f</color>
 </resources>

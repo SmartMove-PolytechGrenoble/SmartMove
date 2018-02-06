@@ -31,6 +31,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
+import android.util.SparseBooleanArray;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -44,6 +45,7 @@ import android.widget.CheckedTextView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.Toolbar;
 
 import com.example.android.bluetoothlegatt.R;
 import com.smove.smartmove.GlobalApplication;
@@ -51,6 +53,7 @@ import com.smove.smartmove.MainActivity;
 
 import java.io.Console;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -70,9 +73,13 @@ public class DeviceScanActivity extends ListActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        this.setTitle(R.string.title_devices);
+        // this.setTitle(R.string.title_devices);
+        requestWindowFeature(Window.FEATURE_NO_TITLE);
         setContentView(R.layout.device_scan_activity);
-        //requestWindowFeature(Window.FEATURE_NO_TITLE);
+        Toolbar toolbar = (Toolbar) this.findViewById(android.R.id.content).getRootView().findViewById(R.id.my_toolbar);
+        setActionBar(toolbar);
+        getActionBar().setDisplayShowTitleEnabled(false);
+        toolbar.setTitle(R.string.title_devices);
         mHandler = new Handler();
         listview = this.getListView();
         mApp = ((GlobalApplication) getApplicationContext());
@@ -170,7 +177,7 @@ public class DeviceScanActivity extends ListActivity {
         }
 
         // Initializes list view adapter.
-        mLeDeviceListAdapter = new LeDeviceListAdapter();
+        mLeDeviceListAdapter = new LeDeviceListAdapter(this);
         setListAdapter(mLeDeviceListAdapter);
         scanLeDevice(true);
     }
@@ -197,10 +204,12 @@ public class DeviceScanActivity extends ListActivity {
         if(!listview.isItemChecked(position)) {
             listview.setItemChecked(position, false);
             v.setBackgroundColor(Color.BLACK);
+            System.out.print(position);
         }
         else{
             listview.setItemChecked(position, true);
             v.setBackgroundColor(Color.LTGRAY);
+            System.out.print(position);
         }
 
         final BluetoothDevice device = mLeDeviceListAdapter.getDevice(position);
@@ -240,9 +249,11 @@ public class DeviceScanActivity extends ListActivity {
     private class LeDeviceListAdapter extends BaseAdapter {
         private ArrayList<BluetoothDevice> mLeDevices;
         private LayoutInflater mInflator;
+        private Activity _context;
 
-        public LeDeviceListAdapter() {
+        public LeDeviceListAdapter(Activity c) {
             super();
+            _context = c;
             mLeDevices = new ArrayList<BluetoothDevice>();
             mInflator = DeviceScanActivity.this.getLayoutInflater();
         }
@@ -277,8 +288,9 @@ public class DeviceScanActivity extends ListActivity {
         }
 
         @Override
-        public View getView(int i, View view, ViewGroup viewGroup) {
+        public View getView(final int i, View view, ViewGroup viewGroup) {
             ViewHolder viewHolder;
+
             // General ListView optimization code.
             if (view == null) {
                 view = mInflator.inflate(R.layout.listitem_device, null);
@@ -290,13 +302,51 @@ public class DeviceScanActivity extends ListActivity {
                 viewHolder = (ViewHolder) view.getTag();
             }
 
-            BluetoothDevice device = mLeDevices.get(i);
+            final BluetoothDevice device = mLeDevices.get(i);
+
             final String deviceName = device.getName();
             if (deviceName != null && deviceName.length() > 0)
                 viewHolder.deviceName.setText(deviceName);
             else
                 viewHolder.deviceName.setText(R.string.unknown_device);
             viewHolder.deviceAddress.setText(device.getAddress());
+
+
+            if(device != null) {
+
+                View tv = view.findViewById(R.id.textviews);
+                tv.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        if(listview.isItemChecked(i)) {
+                            listview.setItemChecked(i, false);
+                            v.setBackgroundColor(Color.BLACK);
+                            System.out.print(i);
+                        }
+                        else{
+                            listview.setItemChecked(i, true);
+                            v.setBackgroundColor(Color.LTGRAY);
+                            System.out.print(i);
+                        }
+                    }
+                });
+                //Handle buttons and add onClickListeners
+                Button callbtn = (Button) view.findViewById(R.id.btn);
+
+                callbtn.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        final Intent intent = new Intent(_context, DeviceControlActivity.class);
+                        intent.putExtra(DeviceControlActivity.EXTRAS_DEVICE_NAME, device.getName());
+                        intent.putExtra(DeviceControlActivity.EXTRAS_DEVICE_ADDRESS, device.getAddress());
+                        if (mScanning) {
+                            mBluetoothAdapter.stopLeScan(mLeScanCallback);
+                            mScanning = false;
+                        }
+                        startActivity(intent);
+                    }
+                });
+            }
 
             return view;
         }
