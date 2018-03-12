@@ -35,6 +35,9 @@ import android.util.Log;
 import java.util.List;
 import java.util.UUID;
 
+import static java.lang.Thread.currentThread;
+import static java.lang.Thread.sleep;
+
 /**
  * Service for managing connection and data communication with a GATT server hosted on a
  * given Bluetooth LE device.
@@ -282,6 +285,17 @@ public class BluetoothLeService extends Service {
         mBluetoothGatt.readCharacteristic(characteristic);
     }
 
+    public void turnOnSensorTagServices() throws InterruptedException {
+        SensorTagServicesAPI.turnOnAccelerometer(mBluetoothGatt);
+        Thread.sleep(500);
+        SensorTagServicesAPI.enableAccelerometerNotifications(mBluetoothGatt);
+
+        Thread.sleep(500);
+        SensorTagServicesAPI.turnOnGyroscope(mBluetoothGatt);
+        Thread.sleep(500);
+        SensorTagServicesAPI.enableAccelerometerNotifications(mBluetoothGatt);
+    }
+
     /**
      * Enables or disables notification on a give characteristic.
      *
@@ -294,15 +308,20 @@ public class BluetoothLeService extends Service {
             Log.w(TAG, "BluetoothAdapter not initialized");
             return;
         }
-        mBluetoothGatt.setCharacteristicNotification(characteristic, enabled);
+        //mBluetoothGatt.setCharacteristicNotification(characteristic, enabled);
+
+        //Log.d(TAG,"*************************************UUID****************************");
+        //Log.d(TAG,characteristic.getUuid().toString());
 
         // This is specific to Heart Rate Measurement.
+        /*
         if (UUID_HEART_RATE_MEASUREMENT.equals(characteristic.getUuid())) {
             BluetoothGattDescriptor descriptor = characteristic.getDescriptor(
                     UUID.fromString(SampleGattAttributes.CLIENT_CHARACTERISTIC_CONFIG));
             descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
             mBluetoothGatt.writeDescriptor(descriptor);
         }
+        */
     }
 
     /**
